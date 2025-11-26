@@ -2,11 +2,34 @@ from agent import Agent
 import argparse 
 import time
 from multiprocessing import Process
+from my_constants import *
+
+
+DIRECTIONS = {
+    LEFT:      (-1,  0),
+    RIGHT:     ( 1,  0),
+    UP:        ( 0, -1),
+    DOWN:      ( 0,  1),
+    UP_LEFT:   (-1, -1),
+    UP_RIGHT:  ( 1, -1),
+    DOWN_LEFT: (-1,  1),
+    DOWN_RIGHT:( 1,  1)
+}
+
+STATES = {
+    "EXPLORING": 0,
+    "RESEARCHING": 1,
+    "FOUND_KEY": 2,
+    "FOUND_BOX": 3,
+    "BOX_NKEY": 4,
+    "KEY_NBOX": 5
+}
 
 class agent_manager:
     def __init__(self):
         self.map = None
         self.agents = []
+
 
     
     def receive_data():
@@ -19,7 +42,17 @@ def run_agent(server_ip):
     agent = Agent(server_ip)
     try:
         while True:
-            # Ici tu peux mettre ta logique manuelle ou automatique
+            cmds = {}
+            if agent.state == STATES["EXPLORING"]:
+                cmds['header'] = MOVE
+                cmds['direction'] = agent.explore()
+                agent.network.send(cmds)
+            elif agent.state == STATES["RESEARCHING"]:
+                cmds['header'] = MOVE
+                cmds['direction'] = agent.research()
+                agent.network.send(cmds)
+            # if 'cell_val' in agent.msg:
+            #     print(agent.msg['cell_val'])
             time.sleep(1)
     except KeyboardInterrupt:
         agent.running = False

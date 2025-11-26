@@ -11,11 +11,29 @@ from threading import Thread
 import numpy as np
 from time import sleep
 
+DIRECTIONS = {
+    LEFT:      (-1,  0),
+    RIGHT:     ( 1,  0),
+    UP:        ( 0, -1),
+    DOWN:      ( 0,  1),
+    UP_LEFT:   (-1, -1),
+    UP_RIGHT:  ( 1, -1),
+    DOWN_LEFT: (-1,  1),
+    DOWN_RIGHT:( 1,  1)
+}
+
+STATES = {
+    "EXPLORING": 0,
+    "RESEARCHING": 1,
+    "FOUND_KEY": 2,
+    "FOUND_BOX": 3,
+    "BOX_NKEY": 4,
+    "KEY_NBOX": 5
+}
 
 class Agent:
     """ Class that implements the behaviour of each agent based on their perception and communication with other agents """
     def __init__(self, server_ip):
-        #TODO: DEINE YOUR ATTRIBUTES HERE
 
         #DO NOT TOUCH THE FOLLOWING INSTRUCTIONS
         self.network = Network(server_ip=server_ip)
@@ -34,6 +52,11 @@ class Agent:
         # print("hello")
         self.wait_for_connected_agent()
 
+        #TODO: DEINE YOUR ATTRIBUTES HERE
+        self.map = np.ones((self.h, self.w)) * -1  #unknown cells are represented by -1
+        self.state = STATES["EXPLORING"]
+        self.pos = None
+
         
     def msg_cb(self): 
         """ Method used to handle incoming messages """
@@ -49,7 +72,7 @@ class Agent:
                 self.nb_agent_connected = msg["nb_connected_agents"]
 
             print("hellooo: ", msg)
-            print("agent_id ", self.agent_id)
+            # print("agent_id ", self.agent_id)
             
 
     def wait_for_connected_agent(self):
@@ -63,9 +86,83 @@ class Agent:
                   
 
     #TODO: CREATE YOUR METHODS HERE...
-    def avancer(self):
-        # sleep(2)
-        return 4
+    def explore(self):
+        # Update map if needed
+        val = self.msg.get("cell_val")
+        if val is not None:
+            self.map[self.y, self.x] = val
+
+        move = 0  #default is to stand still
+        
+        if val == 0:
+            print("Cell is free")
+            # Choose random move (1–8)
+            move = np.random.randint(1, 9)
+
+            # Compute next cell
+            dx, dy = DIRECTIONS[move]
+            nx, ny = self.x + dx, self.y + dy
+
+            # Check if this move is allowed
+            def is_valid(nx, ny):
+                out_of_bounds = nx < 0 or nx >= self.w or ny < 0 or ny >= self.h
+                hit_obstacle = self.map[ny, nx] != -1
+                return not (out_of_bounds or hit_obstacle)
+
+            # If not allowed → pick another random allowed direction
+            if not is_valid(nx, ny):
+
+                # all possible moves except the bad one
+                candidates = []
+
+                for m, (dx, dy) in DIRECTIONS.items():
+                    nx2, ny2 = self.x + dx, self.y + dy
+                    if is_valid(nx2, ny2):
+                        candidates.append(m)
+
+                if candidates:
+                    move = np.random.choice(candidates) 
+                else:
+                    move = np.random.randint(1, 9)  # No valid moves, pick any (will stay in place)
+        if val == 0.25 or val == 0.3:
+            self.state = STATES["RESEARCHING"]
+            return 0
+
+        # print("Current Position:", (self.x, self.y))
+        # print("Moving in direction:", move)
+        return move
+
+    def research(self):
+        print("researching...")
+        if self.pos is None:
+            self.pos = (self.x, self.y)
+
+        val = self.msg.get("cell_val")
+        self.map[self.y, self.x] = val
+
+        if val == 0:
+            direction = tuple(x-y for x,y in zip(self.pos,(self.x, self.y))) 
+            move = [k for k,v in DIRECTIONS.items() if v == direction][0]
+            print("returning to previous pos:", self.pos, "move:", move)
+            return move
+        if val == 0.5 or val == 0.6:
+            # go sur la cellule du 30 le plus proche
+            print("Ca marche jusque la")
+            return 0 
+        if val == 1:
+            self.state = STATES["FOUND_KEY"]
+            self.pos = None
+        
+        candidates = []
+        for m, (dx, dy) in DIRECTIONS.items():
+            nx2, ny2 = self.x + dx, self.y + dy
+            if self.map[ny2, nx2] == -1:
+                candidates.append(m)
+        if candidates:
+            move = np.random.choice(candidates) 
+            print("Candidates found")
+            return move
+        
 
             
  

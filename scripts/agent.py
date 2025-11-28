@@ -179,10 +179,16 @@ class Agent:
             
                         # Research found key or box
             if val == 1:
-                self.state = STATES["FOUND_KEY"]
-                print("Key found at position:", (self.x, self.y))
-                self.pos = None
-                return  #stand still to analyze surroundings
+                if self.map[self.pos2[1], self.pos2[0]] == 0.5:
+                    self.state = STATES["FOUND_KEY"]
+                    # print("Key found at position:", (self.x, self.y))
+                    self.pos = None
+                    return  #stand still to analyze surroundings
+                elif self.map[self.pos2[1], self.pos2[0]] == 0.6:
+                    self.state = STATES["FOUND_BOX"]
+                    # print("Box found at position:", (self.x, self.y))
+                    self.pos = None
+                    return  #stand still to analyze surroundings
             
             candidates = []
             for m, (dx, dy) in DIRECTIONS.items():

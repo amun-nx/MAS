@@ -51,6 +51,7 @@ def run_agent(server_ip):
             elif agent.state == STATES["RESEARCHING"]:
                 cmds['header'] = MOVE
                 cmds['direction'] = agent.research()
+                agent.network.send(cmds)
             # elif agent.state == STATES["FOUND_KEY"]:
             #     cmds['header'] = BROADCAST_MSG
             #     cmds["Msg type"] = KEY_DISCOVERED

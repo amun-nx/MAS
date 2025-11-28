@@ -166,7 +166,6 @@ class Agent:
                     candidates.append(m)
             if candidates:
                 move = np.random.choice(candidates) 
-                print("Candidates found 1")
                 return move
             
         if self.pos and self.pos2:

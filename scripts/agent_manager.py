@@ -3,6 +3,7 @@ import argparse
 import time
 from multiprocessing import Process
 from my_constants import *
+import numpy as np
 
 
 DIRECTIONS = {
@@ -50,10 +51,21 @@ def run_agent(server_ip):
             elif agent.state == STATES["RESEARCHING"]:
                 cmds['header'] = MOVE
                 cmds['direction'] = agent.research()
-                agent.network.send(cmds)
+            # elif agent.state == STATES["FOUND_KEY"]:
+            #     cmds['header'] = BROADCAST_MSG
+            #     cmds["Msg type"] = KEY_DISCOVERED
+            #     cmds["position"] = (agent.x, agent.y)
+            #     cmds["owner"] = np.random.randint(0,3) # TODO: specify the owner of the item
+            #     agent.network.send(cmds)
+            # elif agent.state == STATES["FOUND_BOX"]:
+            #     cmds['header'] = BROADCAST_MSG
+            #     cmds["Msg type"] = BOX_DISCOVERED
+            #     cmds["position"] = (agent.x, agent.y)
+            #     cmds["owner"] = np.random.randint(0,3) # TODO: specify the owner of the item
+            #     agent.network.send(cmds)
             # if 'cell_val' in agent.msg:
             #     print(agent.msg['cell_val'])
-            time.sleep(0.2)
+            time.sleep(0.3)
     except KeyboardInterrupt:
         agent.running = False
         print(f"Agent {agent.agent_id} stopping...")

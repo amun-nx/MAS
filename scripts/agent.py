@@ -166,7 +166,7 @@ class Agent:
                     candidates.append(m)
             if candidates:
                 move = np.random.choice(candidates) 
-                print("Candidates found")
+                print("Candidates found 1")
                 return move
             
         if self.pos and self.pos2:
@@ -191,7 +191,7 @@ class Agent:
                     candidates.append(m)
             if candidates:
                 move = np.random.choice(candidates) 
-                print("Candidates found")
+                print("Candidates found 2")
                 return move
             
 
@@ -210,18 +210,19 @@ if __name__ == "__main__":
     
     try:    #Manual control test0
         while True:
-            # cmds = {"header": int(input("0 <-> Broadcast msg\n1 <-> Get data\n2 <-> Move\n3 <-> Get nb connected agents\n4 <-> Get nb agents\n5 <-> Get item owner\n"))}
-            cmds = {"header": None}
-            # cmds['header'] = 2
-            if cmds["header"] == BROADCAST_MSG:
-                cmds["Msg type"] = int(input("1 <-> Key discovered\n2 <-> Box discovered\n3 <-> Completed\n"))
-                cmds["position"] = (agent.x, agent.y)
-                cmds["owner"] = randint(0,3) # TODO: specify the owner of the item
-            elif cmds["header"] == MOVE:
-                cmds["direction"] = int(input("0 <-> Stand\n1 <-> Left\n2 <-> Right\n3 <-> Up\n4 <-> Down\n5 <-> UL\n6 <-> UR\n7 <-> DL\n8 <-> DR\n"))
-                # cmds["direction"] = agent.avancer()
-                # print("Moving in direction: ", cmds["direction"])
-            agent.network.send(cmds)
+            print("Agent : ", agent.agent_id)
+            # # cmds = {"header": int(input("0 <-> Broadcast msg\n1 <-> Get data\n2 <-> Move\n3 <-> Get nb connected agents\n4 <-> Get nb agents\n5 <-> Get item owner\n"))}
+            # cmds = {"header": None}
+            # # cmds['header'] = 2
+            # if cmds["header"] == BROADCAST_MSG:
+            #     cmds["Msg type"] = int(input("1 <-> Key discovered\n2 <-> Box discovered\n3 <-> Completed\n"))
+            #     cmds["position"] = (agent.x, agent.y)
+            #     cmds["owner"] = randint(0,3) # TODO: specify the owner of the item
+            # elif cmds["header"] == MOVE:
+            #     cmds["direction"] = int(input("0 <-> Stand\n1 <-> Left\n2 <-> Right\n3 <-> Up\n4 <-> Down\n5 <-> UL\n6 <-> UR\n7 <-> DL\n8 <-> DR\n"))
+            #     # cmds["direction"] = agent.avancer()
+            #     # print("Moving in direction: ", cmds["direction"])
+            # agent.network.send(cmds)
     except KeyboardInterrupt:
         pass
 # it is always the same location of the agent first location

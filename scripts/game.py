@@ -46,6 +46,7 @@ class Game:
         items = []
         items.extend(self.keys)
         items.extend(self.boxes)
+        items.extend(self.obstacles)
         offsets = [[(-1, -1), (0, -1), (1, -1), (-1, 0), (0, 0), (1, 0), (-1, 1), (0, 1), (1, 1)], [(-2, -2), (-1, -2), (0, -2), (1, -2), (2, -2), (-2, -1), (2, -1), (-2, 0), (2, 0), (-2, 1), ( 2, 1), (-2, 2), (-1, 2), (0, 2), (1, 2), (2, 2)]]
         for item in items:
             for i, sub_list in enumerate(offsets):

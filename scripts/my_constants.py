@@ -37,10 +37,11 @@ BOX_NEIGHBOUR_PERCENTAGE = 0.6  #value of an adjacent cell to a box
 OBSTACLE_NEIGHBOUR_PERCENTAGE = 0.35  #value of an adjacent cell to an obstacle
 KEY_TYPE = 0    #one of the types of item that is output by the 'Get item owner' request
 BOX_TYPE = 1
+OBSTACLE_TYPE = 2
 
 """ GUI """
-BG_COLOR = (255, 255, 255)
-WHITE = (255, 255, 255)
+BG_COLOR = (150, 120, 200)
+WHITE = (240, 255, 100)
 BLACK = (0, 0, 0)
 RED = (255, 0, 0)
 GREEN = (0, 255, 0)

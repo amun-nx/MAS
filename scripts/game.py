@@ -32,12 +32,16 @@ class Game:
         with open(json_filename, "r") as json_file:
             self.map_cfg = json.load(json_file)[f"map_{map_id}"]        
         
-        self.agents, self.keys, self.boxes = [], [], []
+        self.agents, self.keys, self.boxes, self.obstacles = [], [], [], []
         for i in range(self.nb_agents):
             self.agents.append(Agent(i+1, self.map_cfg[f"agent_{i+1}"]["x"], self.map_cfg[f"agent_{i+1}"]["y"], self.map_cfg[f"agent_{i+1}"]["color"]))
             self.keys.append(Key(self.map_cfg[f"key_{i+1}"]["x"], self.map_cfg[f"key_{i+1}"]["y"]))
             self.boxes.append(Box(self.map_cfg[f"box_{i+1}"]["x"], self.map_cfg[f"box_{i+1}"]["y"]))
+            x, y = self.make_obstacle(i)
+            for j in range(len(x)):
+                self.obstacles.append(Obstacle(x[j], y[j]))
             self.agent_paths[i] = [(self.agents[i].x, self.agents[i].y)]
+
         
         self.map_w, self.map_h = self.map_cfg["width"], self.map_cfg["height"]
         self.map_real = np.zeros(shape=(self.map_h, self.map_w))
@@ -53,7 +57,25 @@ class Game:
                     else:
                         self.add_val(item.x, item.y, 1)
 
-    
+    def make_obstacle(self, i):
+        # Make an L-shaped obstacle using Obstacle(self.map_cfg[f"obstacle_{i+1}"]["x"], self.map_cfg[f"obstacle_{i+1}"]["y"])
+        mat = np.array([[1, 1, 1],
+                        [1, 0, 0],
+                        [1, 0, 0]])
+        
+        # rotate the matrix randomly
+        mat = np.rot90(mat, k=np.random.randint(0, 4))
+        
+        x, y = [], []
+        for j in range(3):
+            for k in range(3):
+                if mat[j, k] == 1:
+                    x.append(self.map_cfg[f"obstacle_{i+1}"]["x"] + k)
+                    y.append(self.map_cfg[f"obstacle_{i+1}"]["y"] + j)
+        
+        return x, y
+        
+        
     def add_val(self, x, y, val):
         """ Add a value if x and y coordinates are in the range [map_w; map_h] """
         if 0 <= x < self.map_w and 0 <= y < self.map_h:
@@ -128,3 +150,7 @@ class Key(Item):
 class Box(Item):
     def __init__(self, x, y):
         Item.__init__(self, x, y, BOX_NEIGHBOUR_PERCENTAGE, "box")
+
+class Obstacle(Item):
+    def __init__(self, x, y):
+        Item.__init__(self, x, y, OBSTACLE_NEIGHBOUR_PERCENTAGE, "obstacle")

@@ -45,6 +45,10 @@ class GUI:
         agent_img = pygame.image.load(img_folder + "/robot.png")
         agent_img = pygame.transform.scale(agent_img, (self.cell_size, self.cell_size))
         self.agents = [agent_img.copy() for _ in range(self.game.nb_agents)]
+        #obstacle
+        obstacle_img = pygame.image.load(img_folder + "/obstacle.png")
+        obstacle_img = pygame.transform.scale(obstacle_img, (self.cell_size, self.cell_size))
+        self.obstacles = [obstacle_img.copy() for _ in range(len(self.game.obstacles))]
 
     
     def on_event(self, event):

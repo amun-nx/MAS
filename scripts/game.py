@@ -23,9 +23,7 @@ class Game:
         self.agent_paths = [None]*nb_agents
         self.load_map(map_id)
         self.gui = GUI(self)
-        
 
-    
     def load_map(self, map_id):
         """ Load a map """
         json_filename = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "resources", "config.json")

@@ -23,24 +23,27 @@ STATES = {
     "FOUND_KEY": 2,
     "FOUND_BOX": 3,
     "BOX_NKEY": 4,
-    "KEY_NBOX": 5
+    "KEY_NBOX": 5,
+    "GOAL": 6
 }
 
 class agent_manager:
     def __init__(self):
         self.map = None
-        self.agents = []
+        self.agents = []      
 
-
-    
-    def receive_data():
-        pass
-
-    def send_commands():
-        pass
-
-def run_agent(server_ip):
+def run_agent( server_ip):
     agent = Agent(server_ip)
+    keys = [{ "Id": 0, "Position": None},
+            { "Id": 1, "Position": None},
+            { "Id": 2, "Position": None},
+            { "Id": 3, "Position": None}]
+    
+    boxes = [{ "Id": 0, "Position": None,},
+                { "Id": 1, "Position": None,},
+                { "Id": 2, "Position": None,},
+                { "Id": 3, "Position": None,}]
+
     try:
         while True:
             cmds = {}
@@ -52,20 +55,24 @@ def run_agent(server_ip):
                 cmds['header'] = MOVE
                 cmds['direction'] = agent.research()
                 agent.network.send(cmds)
-            # elif agent.state == STATES["FOUND_KEY"]:
-            #     cmds['header'] = BROADCAST_MSG
-            #     cmds["Msg type"] = KEY_DISCOVERED
-            #     cmds["position"] = (agent.x, agent.y)
-            #     cmds["owner"] = np.random.randint(0,3) # TODO: specify the owner of the item
-            #     agent.network.send(cmds)
-            # elif agent.state == STATES["FOUND_BOX"]:
-            #     cmds['header'] = BROADCAST_MSG
-            #     cmds["Msg type"] = BOX_DISCOVERED
-            #     cmds["position"] = (agent.x, agent.y)
-            #     cmds["owner"] = np.random.randint(0,3) # TODO: specify the owner of the item
-            #     agent.network.send(cmds)
-            # if 'cell_val' in agent.msg:
-            #     print(agent.msg['cell_val'])
+            elif agent.state == STATES["FOUND_KEY"]:
+                cmds['header'] = GET_ITEM_OWNER
+                agent.network.send(cmds)
+                for key in keys:
+                    try :
+                        if key["Id"] == agent.msg["owner"]:
+                            key["Position"] = (agent.x, agent.y)
+                    except KeyError:
+                        pass
+            elif agent.state == STATES["FOUND_BOX"]:
+                cmds['header'] = GET_ITEM_OWNER
+                agent.network.send(cmds)
+                try : 
+                    for box in boxes:
+                        if box["Id"] == agent.msg["owner"]:
+                            box["Position"] = (agent.x, agent.y)
+                except KeyError:
+                    pass
             time.sleep(0.3)
     except KeyboardInterrupt:
         agent.running = False

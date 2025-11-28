@@ -28,7 +28,8 @@ STATES = {
     "FOUND_KEY": 2,
     "FOUND_BOX": 3,
     "BOX_NKEY": 4,
-    "KEY_NBOX": 5
+    "KEY_NBOX": 5,
+    "GOAL": 6
 }
 
 class Agent:

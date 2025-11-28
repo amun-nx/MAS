@@ -53,7 +53,7 @@ def run_agent(server_ip):
                 agent.network.send(cmds)
             # if 'cell_val' in agent.msg:
             #     print(agent.msg['cell_val'])
-            time.sleep(1)
+            time.sleep(0.2)
     except KeyboardInterrupt:
         agent.running = False
         print(f"Agent {agent.agent_id} stopping...")

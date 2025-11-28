@@ -56,6 +56,7 @@ class Agent:
         self.map = np.ones((self.h, self.w)) * -1  #unknown cells are represented by -1
         self.state = STATES["EXPLORING"]
         self.pos = None
+        self.pos2 = None
 
         
     def msg_cb(self): 
@@ -95,7 +96,6 @@ class Agent:
         move = 0  #default is to stand still
         
         if val == 0:
-            print("Cell is free")
             # Choose random move (1–8)
             move = np.random.randint(1, 9)
 
@@ -106,8 +106,9 @@ class Agent:
             # Check if this move is allowed
             def is_valid(nx, ny):
                 out_of_bounds = nx < 0 or nx >= self.w or ny < 0 or ny >= self.h
-                hit_obstacle = self.map[ny, nx] != -1
-                return not (out_of_bounds or hit_obstacle)
+                # hit_obstacle = self.map[ny, nx] != -1
+                # return not (out_of_bounds or hit_obstacle)
+                return not out_of_bounds
 
             # If not allowed → pick another random allowed direction
             if not is_valid(nx, ny):
@@ -126,7 +127,7 @@ class Agent:
                     move = np.random.randint(1, 9)  # No valid moves, pick any (will stay in place)
         if val == 0.25 or val == 0.3:
             self.state = STATES["RESEARCHING"]
-            return 0
+            return 
 
         # print("Current Position:", (self.x, self.y))
         # print("Moving in direction:", move)
@@ -134,34 +135,66 @@ class Agent:
 
     def research(self):
         print("researching...")
+        # Remember starting position
         if self.pos is None:
             self.pos = (self.x, self.y)
 
+        # Update map
         val = self.msg.get("cell_val")
         self.map[self.y, self.x] = val
 
-        if val == 0:
-            direction = tuple(x-y for x,y in zip(self.pos,(self.x, self.y))) 
-            move = [k for k,v in DIRECTIONS.items() if v == direction][0]
-            print("returning to previous pos:", self.pos, "move:", move)
-            return move
-        if val == 0.5 or val == 0.6:
-            # go sur la cellule du 30 le plus proche
-            print("Ca marche jusque la")
-            return 0 
-        if val == 1:
-            self.state = STATES["FOUND_KEY"]
-            self.pos = None
-        
-        candidates = []
-        for m, (dx, dy) in DIRECTIONS.items():
-            nx2, ny2 = self.x + dx, self.y + dy
-            if self.map[ny2, nx2] == -1:
-                candidates.append(m)
-        if candidates:
-            move = np.random.choice(candidates) 
-            print("Candidates found")
-            return move
+        if self.pos and not self.pos2: 
+            # Research pattern if move brings us to a known case
+            if val == 0 or (val==0.25 and self.pos != (self.x, self.y)) or (val==0.3 and self.pos != (self.x, self.y)):
+                direction = tuple(x-y for x,y in zip(self.pos,(self.x, self.y))) 
+                print("direction:", direction)
+                move = [k for k,v in DIRECTIONS.items() if v == direction][0]
+                print("returning to previous pos:", self.pos, "move:", move)
+                return move
+            
+            # Research if we got closer
+            if val == 0.5 or val == 0.6:
+                if self.pos2 is None:
+                    self.pos2 = (self.x, self.y)
+                return   #stand still to analyze surroundings
+            
+            # Finding Exploration cell possible
+            candidates = []
+            for m, (dx, dy) in DIRECTIONS.items():
+                nx2, ny2 = self.x + dx, self.y + dy
+                if self.map[ny2, nx2] == -1:
+                    candidates.append(m)
+            if candidates:
+                move = np.random.choice(candidates) 
+                print("Candidates found")
+                return move
+            
+        if self.pos and self.pos2:
+            if val == 0 or val == 0.25 or val == 0.3 or (val==0.5 and self.pos2 != (self.x, self.y)) or (val==0.6 and self.pos2 != (self.x, self.y)):
+                direction = tuple(x-y for x,y in zip(self.pos2,(self.x, self.y))) 
+                print("direction:", direction)
+                move = [k for k,v in DIRECTIONS.items() if v == direction][0]
+                print("returning to previous pos:", self.pos2, "move:", move)
+                return move
+            
+                        # Research found key or box
+            if val == 1:
+                self.state = STATES["FOUND_KEY"]
+                print("Key found at position:", (self.x, self.y))
+                self.pos = None
+                return  #stand still to analyze surroundings
+            
+            candidates = []
+            for m, (dx, dy) in DIRECTIONS.items():
+                nx2, ny2 = self.x + dx, self.y + dy
+                if self.map[ny2, nx2] == -1:
+                    candidates.append(m)
+            if candidates:
+                move = np.random.choice(candidates) 
+                print("Candidates found")
+                return move
+            
+
         
 
             

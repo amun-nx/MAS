@@ -32,6 +32,8 @@ STATES = {
     "GOAL": 6
 }
 
+PATTERN = np.zeros((7,7))
+
 class Agent:
     """ Class that implements the behaviour of each agent based on their perception and communication with other agents """
     def __init__(self, server_ip):
@@ -148,9 +150,7 @@ class Agent:
             # Research pattern if move brings us to a known case
             if val == 0 or (val==0.25 and self.pos != (self.x, self.y)) or (val==0.3 and self.pos != (self.x, self.y)):
                 direction = tuple(x-y for x,y in zip(self.pos,(self.x, self.y))) 
-                print("direction:", direction)
                 move = [k for k,v in DIRECTIONS.items() if v == direction][0]
-                print("returning to previous pos:", self.pos, "move:", move)
                 return move
             
             # Research if we got closer
@@ -172,13 +172,16 @@ class Agent:
         if self.pos and self.pos2:
             if val == 0 or val == 0.25 or val == 0.3 or (val==0.5 and self.pos2 != (self.x, self.y)) or (val==0.6 and self.pos2 != (self.x, self.y)):
                 direction = tuple(x-y for x,y in zip(self.pos2,(self.x, self.y))) 
-                print("direction:", direction)
                 move = [k for k,v in DIRECTIONS.items() if v == direction][0]
-                print("returning to previous pos:", self.pos2, "move:", move)
                 return move
             
                         # Research found key or box
             if val == 1:
+                H, W = self.map.shape
+                if self.x + 7 <= W and self.y + 7 <= H:
+                    self.map[self.y:self.y+7, self.x:self.x+7] = PATTERN
+                else :
+                    self.map[self.y:H, self.x:W] = PATTERN[0:H - self.y, 0:W - self.x]
                 if self.map[self.pos2[1], self.pos2[0]] == 0.5:
                     self.state = STATES["FOUND_KEY"]
                     # print("Key found at position:", (self.x, self.y))
@@ -197,7 +200,6 @@ class Agent:
                     candidates.append(m)
             if candidates:
                 move = np.random.choice(candidates) 
-                print("Candidates found 2")
                 return move
             
 
@@ -217,6 +219,7 @@ if __name__ == "__main__":
     try:    #Manual control test0
         while True:
             print("Agent : ", agent.agent_id)
+            print("State : ", agent.state)
             # # cmds = {"header": int(input("0 <-> Broadcast msg\n1 <-> Get data\n2 <-> Move\n3 <-> Get nb connected agents\n4 <-> Get nb agents\n5 <-> Get item owner\n"))}
             # cmds = {"header": None}
             # # cmds['header'] = 2

@@ -53,6 +53,7 @@ def run_agent( server_ip):
                     if key["Id"] == box["Id"] and key["Position"] is not None and box["Position"] is not None:
                         goal = True
             if goal == False: 
+                print("agent id",agent.agent_id,"agent state:", agent.state)
                 if agent.state == STATES["EXPLORING"]:
                     cmds['header'] = MOVE
                     cmds['direction'] = agent.explore()
@@ -66,24 +67,25 @@ def run_agent( server_ip):
                     agent.network.send(cmds)
                     for key in keys:
                         try :
+                            while agent.msg["Owner"] is None:
+                                time.sleep(0.1)
                             if key["Id"] == agent.msg["owner"]:
                                 key["Position"] = (agent.x, agent.y)
                         except KeyError:
                             pass
+                    agent.state = STATES["EXPLORING"]
                 elif agent.state == STATES["FOUND_BOX"]:
                     cmds['header'] = GET_ITEM_OWNER
                     agent.network.send(cmds)
                     try : 
                         for box in boxes:
+                            while agent.msg["Owner"] is None:
+                                time.sleep(0.1)
                             if box["Id"] == agent.msg["owner"]:
                                 box["Position"] = (agent.x, agent.y)
                     except KeyError:
                         pass
-                elif agent.state == STATES["BOX_NKEY"]:
-                    cmds['header'] = GET_ITEM_OWNER
-                    agent.network.send(cmds)
-                elif agent.state == STATES["KEY_NBOX"]:
-                    pass
+                    agent.state = STATES["EXPLORING"]
             else : 
                 agent.state = STATES["GOAL"]
                 print("ON A UN GOAL")

@@ -25,14 +25,12 @@ DIRECTIONS = {
 STATES = {
     "EXPLORING": 0,
     "RESEARCHING": 1,
-    "FOUND_KEY": 2,
-    "FOUND_BOX": 3,
-    "BOX_NKEY": 4,
-    "KEY_NBOX": 5,
-    "GOAL": 6
+    "FOUND": 2,
+    "GOAL": 3,
+    "FINISHED": 4
 }
 
-PATTERN = np.zeros((7,7))
+PATTERN = np.zeros((5,5))
 
 class Agent:
     """ Class that implements the behaviour of each agent based on their perception and communication with other agents """
@@ -60,6 +58,12 @@ class Agent:
         self.state = STATES["EXPLORING"]
         self.pos = None
         self.pos2 = None
+        self.keys_found = []
+        self.boxes_found = []
+        self.key_pos = None
+        self.box_pos = None
+        self.flag = False
+        self.goal_pos = None
 
         
     def msg_cb(self): 
@@ -90,61 +94,59 @@ class Agent:
                   
 
     #TODO: CREATE YOUR METHODS HERE...
-    def explore(self):
-        # Update map if needed
-        val = self.msg.get("cell_val")
-        if val is not None:
-            self.map[self.y, self.x] = val
-
-        move = 0  #default is to stand still
+    def explore(self, startegy = "RANDOM"):
+        if startegy == "RANDOM":
         
-        if val == 0:
-            # Choose random move (1–8)
-            move = np.random.randint(1, 9)
+            val = self.pattern()
 
-            # Compute next cell
-            dx, dy = DIRECTIONS[move]
-            nx, ny = self.x + dx, self.y + dy
+            # --- Compute movement ---
+            move = 0  # default: stand still
 
-            # Check if this move is allowed
-            def is_valid(nx, ny):
-                out_of_bounds = nx < 0 or nx >= self.w or ny < 0 or ny >= self.h
-                # hit_obstacle = self.map[ny, nx] != -1
-                # return not (out_of_bounds or hit_obstacle)
-                return not out_of_bounds
+            if val == 0 or val == -1:
+                move = np.random.randint(1, 9)
+                dx, dy = DIRECTIONS[move]
+                nx, ny = self.x + dx, self.y + dy
 
-            # If not allowed → pick another random allowed direction
-            if not is_valid(nx, ny):
+                def is_valid(nx, ny):
+                    out_of_bounds = nx < 0 or nx >= self.w or ny < 0 or ny >= self.h
+                    if out_of_bounds:
+                        return False
+                    else:
+                        if self.map[ny, nx] == 0:
+                            return False
+                        return True
 
-                # all possible moves except the bad one
-                candidates = []
+                if not is_valid(nx, ny):
+                    candidates = []
+                    for m, (dx, dy) in DIRECTIONS.items():
+                        nx2, ny2 = self.x + dx, self.y + dy
+                        if is_valid(nx2, ny2):
+                            candidates.append(m)
 
-                for m, (dx, dy) in DIRECTIONS.items():
-                    nx2, ny2 = self.x + dx, self.y + dy
-                    if is_valid(nx2, ny2):
-                        candidates.append(m)
+                    move = np.random.choice(candidates) if candidates else np.random.randint(1, 9)
+                
+                self.map[self.y, self.x] = 0  # mark as free cell
 
-                if candidates:
-                    move = np.random.choice(candidates) 
-                else:
-                    move = np.random.randint(1, 9)  # No valid moves, pick any (will stay in place)
-        if val == 0.25 or val == 0.3:
-            self.state = STATES["RESEARCHING"]
-            return 
 
-        # print("Current Position:", (self.x, self.y))
-        # print("Moving in direction:", move)
-        return move
+            print("agent id",self.agent_id, "cell val:", val,"state:", self.state)
+            if val == 0.25 or val == 0.3:
+                self.state = STATES["RESEARCHING"]
+                return
+            return move
+        
+        # Other strategy to be added later
+
 
     def research(self):
-        print("researching...")
+        # print("researching...")
         # Remember starting position
         if self.pos is None:
             self.pos = (self.x, self.y)
 
         # Update map
-        val = self.msg.get("cell_val")
-        self.map[self.y, self.x] = val
+        val = self.pattern()
+
+        print("agent id",self.agent_id, "cell val:", val,"state:", self.state)
 
         if self.pos and not self.pos2: 
             # Research pattern if move brings us to a known case
@@ -175,23 +177,13 @@ class Agent:
                 move = [k for k,v in DIRECTIONS.items() if v == direction][0]
                 return move
             
-                        # Research found key or box
-            if val == 1:
-                H, W = self.map.shape
-                if self.x + 7 <= W and self.y + 7 <= H:
-                    self.map[self.y:self.y+7, self.x:self.x+7] = PATTERN
-                else :
-                    self.map[self.y:H, self.x:W] = PATTERN[0:H - self.y, 0:W - self.x]
-                if self.map[self.pos2[1], self.pos2[0]] == 0.5:
-                    self.state = STATES["FOUND_KEY"]
-                    # print("Key found at position:", (self.x, self.y))
-                    self.pos = None
-                    return  #stand still to analyze surroundings
-                elif self.map[self.pos2[1], self.pos2[0]] == 0.6:
-                    self.state = STATES["FOUND_BOX"]
-                    # print("Box found at position:", (self.x, self.y))
-                    self.pos = None
-                    return  #stand still to analyze surroundings
+            # Research found key or box
+            if val == 1 and (self.map[self.pos2[1], self.pos2[0]] == 0.5 or self.map[self.pos2[1], self.pos2[0]] == 0.6):
+                self.state = STATES["FOUND"]
+                # print("Key found at position:", (self.x, self.y))
+                self.pos = None
+                self.pos2 = None
+                return  #stand still to analyze surroundings
             
             candidates = []
             for m, (dx, dy) in DIRECTIONS.items():
@@ -202,8 +194,89 @@ class Agent:
                 move = np.random.choice(candidates) 
                 return move
             
+    def pattern(self):
+        H, W = self.map.shape
+        h, w = PATTERN.shape
 
+        def safe_paste(cy, cx):
+            H, W = self.map.shape
+            h, w = PATTERN.shape
+
+            # demi-tailles du pattern
+            hy = h // 2
+            hx = w // 2
+
+            # coordonnées théoriques du collage centré
+            y1 = cy - hy
+            y2 = cy + hy + 1
+            x1 = cx - hx
+            x2 = cx + hx + 1
+
+            # coordonnées réelles (clampées aux bords)
+            map_y1 = max(0, y1)
+            map_y2 = min(H, y2)
+            map_x1 = max(0, x1)
+            map_x2 = min(W, x2)
+
+            # partie du PATTERN à coller
+            pat_y1 = map_y1 - y1
+            pat_y2 = pat_y1 + (map_y2 - map_y1)
+            pat_x1 = map_x1 - x1
+            pat_x2 = pat_x1 + (map_x2 - map_x1)
+
+            # collage sécurisé centré
+            self.map[map_y1:map_y2, map_x1:map_x2] = \
+                PATTERN[pat_y1:pat_y2, pat_x1:pat_x2]
+            
+        val = self.msg.get("cell_val")
+
+        if val is not None:
+
+            self.map[self.y, self.x] = val
+            
+            # --- Update map with PATTERN if keys found ---
+            if self.keys_found:
+                for k in self.keys_found:
+                    if k is not None:
+                        ky, kx = k[1], k[0]
+                        safe_paste(ky, kx)
+
+            # --- Same for boxes ---
+            if self.boxes_found:
+                for k in self.boxes_found:
+                    if k is not None : 
+                        ky, kx = k[1], k[0]
+                        safe_paste(ky, kx)
+
+            # --- Normal exploration ---        
+            if val*self.map[self.y, self.x] < 0:
+                return val
+            else :
+                return self.map[self.y, self.x] 
+
+
+    def goal(self):
+
+        # The goal is to go to the key
+        if self.flag == False:
+            self.goal_pos = self.key_pos
+
+        # The goal is to go to the box
+        if (self.x, self.y) == self.key_pos:
+            self.goal_pos = self.box_pos
+            self.flag = True
         
+        if (self.x, self.y) == self.box_pos and self.flag== True:
+            self.state = STATES["FINISHED"]
+            print("GOAL COMPLETED!" * 3)
+            return
+
+        # Compute movement
+        direction = tuple(x-y for x,y in zip(self.goal_pos,(self.x, self.y))) 
+        x = direction[0]//abs(direction[0]) if direction[0]!=0 else 0
+        y = direction[1]//abs(direction[1]) if direction[1]!=0 else 0
+        move = [k for k,v in DIRECTIONS.items() if v == (x,y)][0]
+        return move
 
             
  

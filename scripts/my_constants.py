@@ -40,8 +40,8 @@ BOX_TYPE = 1
 OBSTACLE_TYPE = 2
 
 """ GUI """
-BG_COLOR = (150, 120, 200)
-WHITE = (240, 255, 100)
-BLACK = (0, 0, 0)
+BG_COLOR = (0, 0, 0)
+WHITE = (0, 0, 0)
+BLACK = (255, 0, 120)
 RED = (255, 0, 0)
 GREEN = (0, 255, 0)

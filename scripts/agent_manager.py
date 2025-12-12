@@ -94,6 +94,7 @@ def run_agent(server_ip, keys, boxes):
                 cmds['header'] = MOVE
                 cmds['direction'] = agent.goal()
                 agent.network.send(cmds)
+                
             elif goal == True and agent.state == STATES["FINISHED"]:
                 print(f"The Agent {agent.agent_id} accomplished his mission in {step}")
                 step -=1

@@ -136,7 +136,6 @@ class Agent:
         
         # Other strategy to be added later
 
-
     def research(self):
         # print("researching...")
         # Remember starting position
@@ -253,7 +252,6 @@ class Agent:
                 return val
             else :
                 return self.map[self.y, self.x] 
-
 
     def goal(self):
 

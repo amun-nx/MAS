@@ -11,6 +11,7 @@ from threading import Thread
 import numpy as np
 from time import sleep
 
+# Directions possible 
 DIRECTIONS = {
     LEFT:      (-1,  0),
     RIGHT:     ( 1,  0),
@@ -22,6 +23,7 @@ DIRECTIONS = {
     DOWN_RIGHT:( 1,  1)
 }
 
+# States the robot can be in 
 STATES = {
     "EXPLORING": 0,
     "RESEARCHING": 1,
@@ -30,6 +32,7 @@ STATES = {
     "FINISHED": 4
 }
 
+# Pattern definition in the case where a box or a key is discovered
 PATTERN = np.zeros((5,5))
 
 class Agent:
@@ -54,12 +57,20 @@ class Agent:
         self.wait_for_connected_agent()
 
         #TODO: DEINE YOUR ATTRIBUTES HERE
+        # Own map 
         self.map = np.ones((self.h, self.w)) * -1  #unknown cells are represented by -1
+        # State of the agent
         self.state = STATES["EXPLORING"]
+
+        # Attributes used for box and key research
         self.pos = None
         self.pos2 = None
+
+        # All the keys and boxes found by all the agent
         self.keys_found = []
         self.boxes_found = []
+
+        # Position of the agent's key and position and other attributes
         self.key_pos = None
         self.box_pos = None
         self.flag = False
@@ -94,19 +105,26 @@ class Agent:
                   
 
     #TODO: CREATE YOUR METHODS HERE...
+
+    # Method used when the agent is exploring the area
     def explore(self, startegy = "RANDOM"):
+
+        # First strategy implemented, random search
         if startegy == "RANDOM":
-        
+            
+            # Value of the cell on which the robot stands 
             val = self.pattern()
 
             # --- Compute movement ---
             move = 0  # default: stand still
 
+            # Case where we are on a known or an unknown space
             if val == 0 or val == -1:
                 move = np.random.randint(1, 9)
                 dx, dy = DIRECTIONS[move]
                 nx, ny = self.x + dx, self.y + dy
 
+                # Is the movement in the boudary and not a known space
                 def is_valid(nx, ny):
                     out_of_bounds = nx < 0 or nx >= self.w or ny < 0 or ny >= self.h
                     if out_of_bounds:
@@ -116,6 +134,7 @@ class Agent:
                             return False
                         return True
 
+                # Choose a random candidate among the possible movement
                 if not is_valid(nx, ny):
                     candidates = []
                     for m, (dx, dy) in DIRECTIONS.items():
@@ -127,8 +146,10 @@ class Agent:
                 
                 self.map[self.y, self.x] = 0  # mark as free cell
 
-
+            # Print for debugging purpose
             print("agent id",self.agent_id, "cell val:", val,"state:", self.state)
+
+            # Case where an object is nearby
             if val == 0.25 or val == 0.3:
                 self.state = STATES["RESEARCHING"]
                 return
@@ -136,29 +157,29 @@ class Agent:
         
         # Other strategy to be added later
 
+    # Method used when the agent finds a special value in the map (either 0.3 or 0.25)
     def research(self):
         # print("researching...")
         # Remember starting position
         if self.pos is None:
             self.pos = (self.x, self.y)
 
-        # Update map
+        # Update values to be used
         val = self.pattern()
 
-        print("agent id",self.agent_id, "cell val:", val,"state:", self.state)
-
+        # If we are in the outer layer of the object
         if self.pos and not self.pos2: 
-            # Research pattern if move brings us to a known case
+            # Research pattern if move brings us to a the previous position
             if val == 0 or (val==0.25 and self.pos != (self.x, self.y)) or (val==0.3 and self.pos != (self.x, self.y)):
                 direction = tuple(x-y for x,y in zip(self.pos,(self.x, self.y))) 
                 move = [k for k,v in DIRECTIONS.items() if v == direction][0]
                 return move
             
-            # Research if we got closer
+            # Research if we got into the second layer
             if val == 0.5 or val == 0.6:
                 if self.pos2 is None:
                     self.pos2 = (self.x, self.y)
-                return   #stand still to analyze surroundings
+                return   #stand still 
             
             # Finding Exploration cell possible
             candidates = []
@@ -169,14 +190,17 @@ class Agent:
             if candidates:
                 move = np.random.choice(candidates) 
                 return move
-            
+        
+        # Case where we are in the second layer of an object
         if self.pos and self.pos2:
+
+            # Returning to the previous position
             if val == 0 or val == 0.25 or val == 0.3 or (val==0.5 and self.pos2 != (self.x, self.y)) or (val==0.6 and self.pos2 != (self.x, self.y)):
                 direction = tuple(x-y for x,y in zip(self.pos2,(self.x, self.y))) 
                 move = [k for k,v in DIRECTIONS.items() if v == direction][0]
                 return move
             
-            # Research found key or box
+            # Actions to do when a key or a box is found/ State is changed
             if val == 1 and (self.map[self.pos2[1], self.pos2[0]] == 0.5 or self.map[self.pos2[1], self.pos2[0]] == 0.6):
                 self.state = STATES["FOUND"]
                 # print("Key found at position:", (self.x, self.y))
@@ -192,7 +216,8 @@ class Agent:
             if candidates:
                 move = np.random.choice(candidates) 
                 return move
-            
+
+    # Method used to turn the map area of the keys or boxes into 0            
     def pattern(self):
         H, W = self.map.shape
         h, w = PATTERN.shape
@@ -253,6 +278,7 @@ class Agent:
             else :
                 return self.map[self.y, self.x] 
 
+    # Method used when a key and a box are found
     def goal(self):
 
         # The goal is to go to the key
@@ -264,12 +290,13 @@ class Agent:
             self.goal_pos = self.box_pos
             self.flag = True
         
+        # Changing the state to indicate that the exploration is finished
         if (self.x, self.y) == self.box_pos and self.flag== True:
             self.state = STATES["FINISHED"]
             print("GOAL COMPLETED!" * 3)
             return
 
-        # Compute movement
+        # Compute the normalized  movement 
         direction = tuple(x-y for x,y in zip(self.goal_pos,(self.x, self.y))) 
         x = direction[0]//abs(direction[0]) if direction[0]!=0 else 0
         y = direction[1]//abs(direction[1]) if direction[1]!=0 else 0
@@ -290,7 +317,7 @@ if __name__ == "__main__":
     try:    #Manual control test0
         while True:
             print("Agent : ", agent.agent_id)
-            print("State : ", agent.state)
+            # print("State : ", agent.state)
             # # cmds = {"header": int(input("0 <-> Broadcast msg\n1 <-> Get data\n2 <-> Move\n3 <-> Get nb connected agents\n4 <-> Get nb agents\n5 <-> Get item owner\n"))}
             # cmds = {"header": None}
             # # cmds['header'] = 2

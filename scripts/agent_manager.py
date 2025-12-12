@@ -6,8 +6,10 @@ from multiprocessing import Manager
 from my_constants import *
 import numpy as np
 
+# Values for pattern research
 offsets = [(-1, -1), (0, -1), (1, -1), (-1, 0), (0, 0), (1, 0), (-1, 1), (0, 1), (1, 1),(-2, -2), (-1, -2), (0, -2), (1, -2), (2, -2), (-2, -1), (2, -1), (-2, 0), (2, 0), (-2, 1), ( 2, 1), (-2, 2), (-1, 2), (0, 2), (1, 2), (2, 2)]
 
+# Directions possible 
 DIRECTIONS = {
     LEFT:      (-1,  0),
     RIGHT:     ( 1,  0),
@@ -19,6 +21,7 @@ DIRECTIONS = {
     DOWN_RIGHT:( 1,  1)
 }
 
+# States the robot can be in 
 STATES = {
     "EXPLORING": 0,
     "RESEARCHING": 1,
@@ -32,22 +35,33 @@ class agent_manager:
         self.map = None
         self.agents = []      
 
+# Main function that is running
 def run_agent(server_ip, keys, boxes):
     agent = Agent(server_ip)
+
+    # Step to count the amount of displacement the robot did
     step = 0
 
     try:
         while True:
+            # Adding to the step
             step +=1
-            # print("Agent ID:", agent.agent_id)
+
+            # Lists for the agents keys and box found
             agent.keys_found = []
             agent.boxes_found = []
             cmds = {}
+
+            # Flag to detect if we have a key and a bow for the corresponding agent
             goal = False 
+
+            # At each iteration, we send the boxes known and keys known to all the agents
             for key in keys : 
                 agent.keys_found.append(key["Position"])
             for box in boxes :
                 agent.boxes_found.append(box["Position"])
+
+            # Updating the flag goal 
             for key in keys:
                 for box in boxes:
                     # print("key pos:", key["Position"], "box pos:", box["Position"])
@@ -56,6 +70,8 @@ def run_agent(server_ip, keys, boxes):
                         key_pos = key["Position"]
                         box_pos = box["Position"]
                         # print("WE HAVE A GOAL at position:", key["Position"], box["Position"], "for robot ", key["Id"])
+
+            # Cases where we don't have a goal yet
             if goal == False: 
                 # Exploring the environment
                 if agent.state == STATES["EXPLORING"]:
@@ -65,6 +81,8 @@ def run_agent(server_ip, keys, boxes):
                 
                 # Researching an unknown either a box or a key
                 elif agent.state == STATES["RESEARCHING"]:
+
+                    # Flag and loop for the case where two robots are researching and one detects the object
                     flag = False
                     for key,box in zip(keys,boxes) :
                         for offset in offsets : 
@@ -103,7 +121,8 @@ def run_agent(server_ip, keys, boxes):
                     except KeyError:
                         pass
                     agent.state = STATES["EXPLORING"]
-                
+
+            # Case where we have a goal but we have to get the key and go to the tresor
             elif goal == True and agent.state != STATES["FINISHED"]:
                 agent.state = STATES["GOAL"]
                 agent.key_pos = key_pos
@@ -111,7 +130,8 @@ def run_agent(server_ip, keys, boxes):
                 cmds['header'] = MOVE
                 cmds['direction'] = agent.goal()
                 agent.network.send(cmds)
-                
+
+            # The robot is on the box after getting the key, the step is fixed
             elif goal == True and agent.state == STATES["FINISHED"]:
                 print(f"The Agent {agent.agent_id} accomplished his mission in {step}")
                 step -=1
@@ -126,6 +146,7 @@ if __name__ == "__main__":
     
     manager = Manager()
 
+    # Keys list shared among the agents
     keys = manager.list([
         manager.dict({ "Id": 0, "Position": None}),
         manager.dict({ "Id": 1, "Position": None}),
@@ -133,14 +154,17 @@ if __name__ == "__main__":
         manager.dict({ "Id": 3, "Position": None}),
     ])
 
+    # Boxes list shared among the agents
     boxes = manager.list([
         manager.dict({ "Id": 0, "Position": None}),
         manager.dict({ "Id": 1, "Position": None}),
         manager.dict({ "Id": 2, "Position": None}),
         manager.dict({ "Id": 3, "Position": None}),
     ])
-
-    n = int(input("Nombre d'agents à lancer: "))
+    
+    # Enter the number of agent necessary 
+    
+    n = int(input("Number of agents to launch : "))
     processes = []
 
     for i in range(n):

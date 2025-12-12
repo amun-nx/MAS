@@ -36,7 +36,7 @@ class agent_manager:
         self.agents = []      
 
 # Main function that is running
-def run_agent(server_ip, keys, boxes):
+def run_agent(server_ip, keys, boxes, n):
     agent = Agent(server_ip)
 
     # Step to count the amount of displacement the robot did
@@ -56,16 +56,23 @@ def run_agent(server_ip, keys, boxes):
             goal = False 
 
             # At each iteration, we send the boxes known and keys known to all the agents
-            for key in keys : 
+            # Count to know how many keys and boxes were found or not
+            count1 = 0
+            count2 = 0
+            for key in keys :
+                if key["Position"] is not None:
+                    count1 +=1
                 agent.keys_found.append(key["Position"])
             for box in boxes :
+                if box["Position"] is not None:
+                    count2+=1
                 agent.boxes_found.append(box["Position"])
 
-            # Updating the flag goal 
+            # Updating the flag goal when all the keys and boxes are found.
             for key in keys:
                 for box in boxes:
                     # print("key pos:", key["Position"], "box pos:", box["Position"])
-                    if key["Id"] == box["Id"] and key["Position"] is not None and box["Position"] is not None and key["Id"]==agent.agent_id:
+                    if key["Id"] == box["Id"] and key["Position"] is not None and box["Position"] is not None and key["Id"]==agent.agent_id and count1==n and count2==n:
                         goal = True
                         key_pos = key["Position"]
                         box_pos = box["Position"]
@@ -163,12 +170,12 @@ if __name__ == "__main__":
     ])
     
     # Enter the number of agent necessary 
-    
+
     n = int(input("Number of agents to launch : "))
     processes = []
 
     for i in range(n):
-        p = Process(target=run_agent, args=(server_ip,keys,boxes))
+        p = Process(target=run_agent, args=(server_ip,keys,boxes, n))
         p.start()
         processes.append(p)
 

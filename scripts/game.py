@@ -47,13 +47,40 @@ class Game:
         items.extend(self.keys)
         items.extend(self.boxes)
         offsets = [[(-1, -1), (0, -1), (1, -1), (-1, 0), (0, 0), (1, 0), (-1, 1), (0, 1), (1, 1)], [(-2, -2), (-1, -2), (0, -2), (1, -2), (2, -2), (-2, -1), (2, -1), (-2, 0), (2, 0), (-2, 1), ( 2, 1), (-2, 2), (-1, 2), (0, 2), (1, 2), (2, 2)]]
-        for item in items:
+        # Adding obstacles
+        items2 = []
+        items2.extend(self.obstacles)
+        offsets2 = [(1,0),(0,1),(-1,0),(0,-1),(1,1),(-1,-1),(1,-1),(-1,1)]
+        
+        for item in items :
             for i, sub_list in enumerate(offsets):
                 for dx, dy in sub_list:
                     if dx != 0 or dy != 0:
                         self.add_val(item.x + dx, item.y + dy, item.neighbour_percent/(i+1))
                     else:
                         self.add_val(item.x, item.y, 1)
+        
+        # Try to make obstacles
+        # for item in items2:
+        #     for sub_list in offsets2:
+        #         dx, dy = sub_list[0], sub_list[1]
+        #         x,y  = item.x, item.y
+        #         new_posx = x + dx
+        #         new_posy = y + dy
+        #         self.add_val(x, y, 1)
+        #         if self.map_real[new_posy, new_posx] == 1:
+        #             for sub_list2 in offsets2:
+        #                 dx2, dy2 = sub_list2[0], sub_list2[1]
+        #                 new_posx2 = new_posx + dx2
+        #                 new_posy2 = new_posy + dy2
+        #                 if self.map_real[new_posy2, new_posx2] == 1:
+        #                     pass
+        #                 elif self.map_real[new_posy2, new_posx2] == item.neighbour_percent:
+        #                     pass
+        #                 elif self.map_real[new_posy2, new_posx2] == 0:
+        #                     self.add_val(new_posx2, new_posy2, item.neighbour_percent)
+
+                
 
     def make_obstacle(self, i):
         # Make an L-shaped obstacle using Obstacle(self.map_cfg[f"obstacle_{i+1}"]["x"], self.map_cfg[f"obstacle_{i+1}"]["y"])
@@ -70,7 +97,6 @@ class Game:
                 if mat[j, k] == 1:
                     x.append(self.map_cfg[f"obstacle_{i+1}"]["x"] + k)
                     y.append(self.map_cfg[f"obstacle_{i+1}"]["y"] + j)
-        
         return x, y
         
         

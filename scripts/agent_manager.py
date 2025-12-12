@@ -6,6 +6,7 @@ from multiprocessing import Manager
 from my_constants import *
 import numpy as np
 
+offsets = [(-1, -1), (0, -1), (1, -1), (-1, 0), (0, 0), (1, 0), (-1, 1), (0, 1), (1, 1),(-2, -2), (-1, -2), (0, -2), (1, -2), (2, -2), (-2, -1), (2, -1), (-2, 0), (2, 0), (-2, 1), ( 2, 1), (-2, 2), (-1, 2), (0, 2), (1, 2), (2, 2)]
 
 DIRECTIONS = {
     LEFT:      (-1,  0),
@@ -64,9 +65,25 @@ def run_agent(server_ip, keys, boxes):
                 
                 # Researching an unknown either a box or a key
                 elif agent.state == STATES["RESEARCHING"]:
-                    cmds['header'] = MOVE
-                    cmds['direction'] = agent.research()
-                    agent.network.send(cmds)
+                    flag = False
+                    for key,box in zip(keys,boxes) :
+                        for offset in offsets : 
+                            if key["Position"] is not None :
+                                x_key, y_key = key["Position"][0], key["Position"][1]
+                                x_offset, y_offset = offset[0], offset[1]
+                                if (x_key + x_offset == agent.x and y_key + y_offset==agent.y):
+                                    flag = True
+                            if box["Position"] is not None :
+                                x_box, y_box = box["Position"][0], box["Position"][1]
+                                x_offset, y_offset = offset[0], offset[1]
+                                if (x_box + x_offset == agent.x and y_box + y_offset == agent.y) :
+                                    flag = True
+                    if flag == False:               
+                        cmds['header'] = MOVE
+                        cmds['direction'] = agent.research()
+                        agent.network.send(cmds)
+                    else :
+                        agent.state = STATES["EXPLORING"]
 
                 # If we find something, we get the owner and the type of the item
                 elif agent.state == STATES["FOUND"]:
